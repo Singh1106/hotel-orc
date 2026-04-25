@@ -196,7 +196,7 @@ npm run worker
 hotel-orc/
 ├── src/
 │   ├── index.ts              # Main Express app
-│   ├── logger.ts             # Winston logger
+│   ├── logger.ts             # Custom logger with log levels
 │   ├── routes/
 │   │   ├── health.ts         # Health check endpoint
 │   │   └── hotels.ts         # Hotel search endpoint

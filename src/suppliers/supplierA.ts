@@ -12,7 +12,8 @@ router.get("/hotels", (req, res) => {
 
   const hotels = supplierAHotels.filter((h) => h.city === city);
 
-  setTimeout(() => res.json(hotels), 150);
+  setTimeout(() => res.json(hotels), Math.floor(Math.random() * 201) + 100
+  );
 });
 
 export default router;

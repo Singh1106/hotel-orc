@@ -4,7 +4,7 @@ import type * as activities from "./activities";
 const {
   fetchSupplierAHotels,
   fetchSupplierBHotels,
-  dedupe,
+  dedupeAndCache,
 } = proxyActivities<typeof activities>({
   startToCloseTimeout: "10 seconds",
   retry: {
@@ -25,7 +25,7 @@ export async function hotelOfferWorkflow(city: string) {
     supplierBCount: supplierBHotels.length,
   });
 
-  const deduped = await dedupe([
+  const deduped = await dedupeAndCache(city, [
     { name: "Supplier A", hotels: supplierAHotels },
     { name: "Supplier B", hotels: supplierBHotels },
   ]);

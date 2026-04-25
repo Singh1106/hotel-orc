@@ -27,8 +27,7 @@ router.get('/', async (req: Request, res: Response) => {
     
     // Check Redis cache first
     logger.debug('Checking Redis cache', { city });
-    let cachedOffers = await getCachedHotelOffers(city, minPrice, maxPrice);
-    
+    const cachedOffers = await getCachedHotelOffers(city, minPrice, maxPrice);
     if (cachedOffers) {
       logger.info('Cache hit - returning cached results', { city, count: cachedOffers.length });
       return res.json(cachedOffers);

@@ -86,7 +86,14 @@ export async function dedupeAndCacheInRedis(
     }
   }
 
-  // Set TTL on both keys
+  // Don't cache empty results - if suppliers return no hotels, skip caching
+  // This ensures the workflow runs again on next request to check for new data
+  if (totalHotels === 0) {
+    logger.info("No hotels found from suppliers, skipping cache to allow fresh checks", { city });
+    return [];
+  }
+
+  // Set TTL on both keys (only executed when we have hotels to cache)
   pipeline.expire(sortedSetKey, CACHE_TTL);
   pipeline.expire(hashKey, CACHE_TTL);
 
@@ -127,13 +134,15 @@ export async function getCachedHotelOffers(
   const sortedSetKey = `hotels:${city}:offers`;
   const hashKey = `hotels:${city}:details`;
 
-  // Check if cache exists
+  // Check if cache exists for this city
+  // Returns null if no cache exists (triggers workflow)
+  // Returns array (possibly empty after price filtering) if cache exists
   const exists = await redisClient.exists(sortedSetKey);
   if (!exists) {
-    return null; // Cache miss - need to run workflow
+    return null; // Cache miss - workflow will be triggered
   }
 
-  // Cache exists (even if empty) - retrieve results
+  // Cache exists - retrieve results with optional price filtering
   const min = minPrice !== undefined ? minPrice : '-inf';
   const max = maxPrice !== undefined ? maxPrice : '+inf';
   
@@ -157,5 +166,5 @@ export async function getCachedHotelOffers(
     maxPrice 
   });
 
-  return offers; // Return empty array if no hotels (valid cached result)
+  return offers; // Return cached results
 }

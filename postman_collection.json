@@ -20,28 +20,7 @@
       "response": []
     },
     {
-      "name": "Search Hotels - Delhi (Cache Miss)",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/api/hotels?city=delhi",
-          "host": ["{{base_url}}"],
-          "path": ["api", "hotels"],
-          "query": [
-            {
-              "key": "city",
-              "value": "delhi",
-              "description": "City name (lowercase)"
-            }
-          ]
-        },
-        "description": "First request for Delhi hotels - triggers Temporal workflow to fetch from suppliers. Response time: ~200-400ms"
-      },
-      "response": []
-    },
-    {
-      "name": "Search Hotels - Delhi (Cache Hit)",
+      "name": "Search Hotels - Delhi",
       "request": {
         "method": "GET",
         "header": [],

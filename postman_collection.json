@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "Hotel Orchestration Service",
+    "description": "API collection for testing the hotel aggregation service with Temporal workflows and Redis caching",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check the health status of all dependencies (Redis, Temporal, Worker, Supplier A, Supplier B)"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Delhi (Cache Miss)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi",
+              "description": "City name (lowercase)"
+            }
+          ]
+        },
+        "description": "First request for Delhi hotels - triggers Temporal workflow to fetch from suppliers. Response time: ~200-400ms"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Delhi (Cache Hit)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi",
+              "description": "City name (lowercase)"
+            }
+          ]
+        },
+        "description": "Second request for Delhi hotels - returns cached results instantly. Response time: <50ms"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Mumbai",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=mumbai",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "mumbai",
+              "description": "City name (lowercase)"
+            }
+          ]
+        },
+        "description": "Search for hotels in Mumbai"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Bangalore",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=bangalore",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "bangalore",
+              "description": "City name (lowercase)"
+            }
+          ]
+        },
+        "description": "Search for hotels in Bangalore"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - No Results (Paris)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=paris",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "paris",
+              "description": "City with no hotels in database"
+            }
+          ]
+        },
+        "description": "Search for a city with no results - returns empty array"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Price Filter (Min)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi&minPrice=6000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            },
+            {
+              "key": "minPrice",
+              "value": "6000",
+              "description": "Minimum price filter"
+            }
+          ]
+        },
+        "description": "Filter hotels with minimum price of 6000"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Price Filter (Max)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi&maxPrice=8000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            },
+            {
+              "key": "maxPrice",
+              "value": "8000",
+              "description": "Maximum price filter"
+            }
+          ]
+        },
+        "description": "Filter hotels with maximum price of 8000"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Price Range",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi&minPrice=5000&maxPrice=9000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            },
+            {
+              "key": "minPrice",
+              "value": "5000",
+              "description": "Minimum price"
+            },
+            {
+              "key": "maxPrice",
+              "value": "9000",
+              "description": "Maximum price"
+            }
+          ]
+        },
+        "description": "Filter hotels within price range 5000-9000"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Invalid Price (Min > Max)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi&minPrice=10000&maxPrice=5000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            },
+            {
+              "key": "minPrice",
+              "value": "10000"
+            },
+            {
+              "key": "maxPrice",
+              "value": "5000"
+            }
+          ]
+        },
+        "description": "Test validation error when minPrice > maxPrice. Expected: 400 Bad Request"
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Invalid Price Parameter",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels?city=delhi&minPrice=invalid",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            },
+            {
+              "key": "minPrice",
+              "value": "invalid",
+              "description": "Invalid price value"
+            }
+          ]
+        },
+        "description": "Test validation error with invalid price parameter. Expected: 400 Bad Request"
+      },
+      "response": []
+    },
+    {
+      "name": "Supplier A - Direct Call",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/supplierA/hotels?city=delhi",
+          "host": ["{{base_url}}"],
+          "path": ["supplierA", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            }
+          ]
+        },
+        "description": "Direct call to Supplier A endpoint (internal use). Simulates 100-300ms latency."
+      },
+      "response": []
+    },
+    {
+      "name": "Supplier B - Direct Call",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/supplierB/hotels?city=delhi",
+          "host": ["{{base_url}}"],
+          "path": ["supplierB", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "delhi"
+            }
+          ]
+        },
+        "description": "Direct call to Supplier B endpoint (internal use). Simulates 100-300ms latency."
+      },
+      "response": []
+    },
+    {
+      "name": "Search Hotels - Default City",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/hotels",
+          "host": ["{{base_url}}"],
+          "path": ["api", "hotels"]
+        },
+        "description": "Search without city parameter - defaults to 'delhi'"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

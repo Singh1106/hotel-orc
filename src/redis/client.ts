@@ -130,10 +130,10 @@ export async function getCachedHotelOffers(
   // Check if cache exists
   const exists = await redisClient.exists(sortedSetKey);
   if (!exists) {
-    return null;
+    return null; // Cache miss - need to run workflow
   }
 
-  // Retrieve sorted results with price filtering using Redis ZRANGEBYSCORE
+  // Cache exists (even if empty) - retrieve results
   const min = minPrice !== undefined ? minPrice : '-inf';
   const max = maxPrice !== undefined ? maxPrice : '+inf';
   
@@ -157,5 +157,5 @@ export async function getCachedHotelOffers(
     maxPrice 
   });
 
-  return offers;
+  return offers; // Return empty array if no hotels (valid cached result)
 }

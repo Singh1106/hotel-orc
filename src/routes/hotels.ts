@@ -66,8 +66,10 @@ router.get('/', async (req: Request, res: Response) => {
     // Now fetch from Redis with price filtering
     const offers = await getCachedHotelOffers(city, minPrice, maxPrice);
     
-    if (!offers) {
-      throw new Error('Failed to retrieve data from Redis after workflow completion');
+    // Return empty array if no hotels found (valid response, not an error)
+    if (!offers || offers.length === 0) {
+      logger.info('No hotels found', { city });
+      return res.json([]);
     }
     
     logger.info('Returning results', { city, count: offers.length });

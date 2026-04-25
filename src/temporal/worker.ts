@@ -1,5 +1,6 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
 import * as activities from "./activities";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { logger } from "../logger";
@@ -12,18 +13,21 @@ const TASK_QUEUE = "hotel-offers";
 
 export async function startWorker(): Promise<Worker> {
   logger.info("Starting Temporal worker", { address: TEMPORAL_ADDRESS, taskQueue: TASK_QUEUE });
-  
+
   const connection = await NativeConnection.connect({
     address: TEMPORAL_ADDRESS,
   });
 
   logger.debug("Connected to Temporal server");
 
+  const bundlePath = resolve(__dirname, "./workflows.js");
+  const workflowsPath = existsSync(bundlePath) ? bundlePath : resolve(__dirname, "./workflows.ts");
+
   const worker = await Worker.create({
     connection,
     namespace: "default",
     taskQueue: TASK_QUEUE,
-    workflowsPath: resolve(__dirname, "./workflows.ts"),
+    workflowsPath,
     activities,
   });
 

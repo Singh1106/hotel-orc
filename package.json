@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "worker": "tsx watch src/temporal/worker.ts",
-    "build": "npx tsc",
+    "build": "npm run build:app && npm run build:workflows",
+    "build:app": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.js --external:@temporalio/* --external:express --external:redis --external:axios --external:dotenv",
+    "build:workflows": "esbuild src/temporal/workflows.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/workflows.js --external:@temporalio/workflow",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "esbuild": "^0.28.0",
     "tsx": "^4.19.2"
   }
 }

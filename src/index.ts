@@ -16,7 +16,7 @@ app.use(express.json())
 let workerInstance: Worker | null = null;
 
 // Request logging middleware
-app.use((req, res, next) => {
+app.use((req: Request, res:Response, next) => {
   logger.info(`${req.method} ${req.path}`, { query: req.query });
   next();
 });

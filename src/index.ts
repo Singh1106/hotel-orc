@@ -5,6 +5,7 @@ import supplierARouter from "./suppliers/supplierA";
 import supplierBRouter from "./suppliers/supplierB";
 import { logger } from './logger';
 import { startWorker } from './temporal/worker';
+import { getCachedHotelOffers } from './redis/client';
 
 const app = express()
 app.use(express.json())
@@ -18,15 +19,37 @@ app.use((req, res, next) => {
 app.use("/supplierA", supplierARouter);
 app.use("/supplierB", supplierBRouter);
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'hello' })
-})
-
-// Temporary endpoint to trigger hotel workflow
+// Hotel search endpoint - checks Redis cache first, then triggers workflow if needed
 app.get('/api/hotels', async (req: Request, res: Response) => {
   try {
-    const city = req.query.city as string || 'delhi';
-    logger.info('Starting hotel search workflow', { city });
+    const city = (req.query.city as string || 'delhi').toLowerCase();
+    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined;
+    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined;
+    
+    logger.info('Hotel search request', { city, minPrice, maxPrice });
+    
+    // Validate price parameters
+    if (minPrice !== undefined && isNaN(minPrice)) {
+      return res.status(400).json({ error: 'Invalid minPrice parameter' });
+    }
+    if (maxPrice !== undefined && isNaN(maxPrice)) {
+      return res.status(400).json({ error: 'Invalid maxPrice parameter' });
+    }
+    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+      return res.status(400).json({ error: 'minPrice cannot be greater than maxPrice' });
+    }
+    
+    // Check Redis cache first
+    logger.debug('Checking Redis cache', { city });
+    let cachedOffers = await getCachedHotelOffers(city, minPrice, maxPrice);
+    
+    if (cachedOffers) {
+      logger.info('Cache hit - returning cached results', { city, count: cachedOffers.length });
+      return res.json(cachedOffers);
+    }
+    
+    // Cache miss - start workflow to fetch and cache data
+    logger.info('Cache miss - starting workflow', { city });
     
     // Connect to Temporal
     logger.debug('Connecting to Temporal', { address: process.env.TEMPORAL_URL || 'localhost:7233' });
@@ -49,18 +72,24 @@ app.get('/api/hotels', async (req: Request, res: Response) => {
     
     logger.debug('Workflow started, waiting for result', { workflowId });
     
-    // Wait for result
-    const result = await handle.result();
+    // Wait for workflow to complete (data is now cached in Redis)
+    await handle.result();
     
-    logger.info('Workflow completed', { city, offerCount: result.length });
+    logger.info('Workflow completed - fetching from Redis', { city });
     
-    res.json({ 
-      city,
-      offers: result,
-      count: result.length 
-    });
+    // Now fetch from Redis with price filtering
+    const offers = await getCachedHotelOffers(city, minPrice, maxPrice);
+    
+    if (!offers) {
+      throw new Error('Failed to retrieve data from Redis after workflow completion');
+    }
+    
+    logger.info('Returning results', { city, count: offers.length });
+    
+    // Return array directly as per requirements
+    res.json(offers);
   } catch (error) {
-    logger.error('Error running workflow', { 
+    logger.error('Error fetching hotel offers', { 
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined
     });

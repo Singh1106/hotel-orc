@@ -1,5 +1,5 @@
 import { createClient } from "redis";
-import { HotelOffer } from "../types";
+import { HotelOffer } from "../suppliers/data";
 import { logger } from "../logger";
 
 const CACHE_TTL = 15 * 60; // 15 minutes in seconds
@@ -34,7 +34,7 @@ export async function dedupeAndCacheInRedis(
   city: string,
   supplierResults: Array<{ 
     name: string; 
-    hotels: Array<{ name: string; price: number; commissionPct: number }> 
+    hotels: HotelOffer[]
   }>
 ): Promise<HotelOffer[]> {
   if (!redisConnected) {
@@ -42,7 +42,7 @@ export async function dedupeAndCacheInRedis(
     throw new Error("Redis not connected");
   }
 
-  logger.debug("Starting Redis deduplication", { city, supplierCount: supplierResults.length });
+  logger.debug("Starting Redis deduplication and caching", { city, supplierCount: supplierResults.length });
 
   const sortedSetKey = `hotels:${city}:offers`;
   const hashKey = `hotels:${city}:details`;
@@ -62,11 +62,14 @@ export async function dedupeAndCacheInRedis(
     totalHotels += hotels.length;
     
     for (const hotel of hotels) {
-      const hotelOffer: HotelOffer = {
+      // Create hotel data with updated supplier field
+      const hotelData: HotelOffer & { supplier: string } = {
+        hotelId: hotel.hotelId,
         name: hotel.name,
         price: hotel.price,
-        supplier: supplierName,
+        city: hotel.city,
         commissionPct: hotel.commissionPct,
+        supplier: supplierName,
       };
 
       // Add to sorted set with price as score
@@ -79,7 +82,7 @@ export async function dedupeAndCacheInRedis(
 
       // Store full hotel details in hash
       // This will overwrite with the latest, but sorted set keeps the best price
-      pipeline.hSet(hashKey, hotel.name, JSON.stringify(hotelOffer));
+      pipeline.hSet(hashKey, hotel.name, JSON.stringify(hotelData));
     }
   }
 
@@ -91,10 +94,9 @@ export async function dedupeAndCacheInRedis(
   await pipeline.exec();
   logger.debug("Redis pipeline executed");
 
-  // Retrieve sorted results (automatically sorted by price ascending)
+  // Retrieve all cached results
   const hotelNames = await redisClient.zRange(sortedSetKey, 0, -1);
-  logger.debug("Retrieved hotel names from sorted set", { count: hotelNames.length });
-
+  
   // Fetch full details for each hotel
   const offers: HotelOffer[] = [];
   for (const hotelName of hotelNames) {
@@ -104,17 +106,20 @@ export async function dedupeAndCacheInRedis(
     }
   }
 
-  logger.info("Deduplication complete", { 
+  logger.info("Deduplication and caching complete", { 
     city, 
-    totalHotels, 
-    uniqueHotels: offers.length,
-    duplicatesRemoved: totalHotels - offers.length 
+    totalHotels,
+    uniqueHotels: offers.length
   });
 
   return offers;
 }
 
-export async function getCachedHotelOffers(city: string): Promise<HotelOffer[] | null> {
+export async function getCachedHotelOffers(
+  city: string,
+  minPrice?: number,
+  maxPrice?: number
+): Promise<HotelOffer[] | null> {
   if (!redisConnected) {
     return null;
   }
@@ -128,8 +133,13 @@ export async function getCachedHotelOffers(city: string): Promise<HotelOffer[] |
     return null;
   }
 
-  // Retrieve sorted results (sorted by price ascending)
-  const hotelNames = await redisClient.zRange(sortedSetKey, 0, -1);
+  // Retrieve sorted results with price filtering using Redis ZRANGEBYSCORE
+  const min = minPrice !== undefined ? minPrice : '-inf';
+  const max = maxPrice !== undefined ? maxPrice : '+inf';
+  
+  logger.debug("Filtering hotels by price range", { city, min, max });
+  
+  const hotelNames = await redisClient.zRangeByScore(sortedSetKey, min, max);
 
   // Fetch full details for each hotel
   const offers: HotelOffer[] = [];
@@ -139,6 +149,13 @@ export async function getCachedHotelOffers(city: string): Promise<HotelOffer[] |
       offers.push(JSON.parse(data));
     }
   }
+
+  logger.info("Retrieved filtered hotels from cache", { 
+    city, 
+    count: offers.length,
+    minPrice,
+    maxPrice 
+  });
 
   return offers;
 }

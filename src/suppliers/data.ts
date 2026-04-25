@@ -1,4 +1,4 @@
-export interface Hotel {
+export interface HotelOffer {
   hotelId: string;
   name: string;
   price: number;
@@ -6,7 +6,7 @@ export interface Hotel {
   commissionPct: number;
 }
 
-export const supplierAHotels: Hotel[] = [
+export const supplierAHotels: HotelOffer[] = [
   { hotelId: "a1", name: "Holtin", price: 6000, city: "delhi", commissionPct: 10 },
   { hotelId: "a2", name: "Radison", price: 5900, city: "delhi", commissionPct: 13 },
   { hotelId: "a3", name: "Marriot", price: 8500, city: "delhi", commissionPct: 15 },
@@ -17,7 +17,7 @@ export const supplierAHotels: Hotel[] = [
   { hotelId: "a8", name: "Holtin", price: 5200, city: "bangalore", commissionPct: 10 },
 ];
 
-export const supplierBHotels: Hotel[] = [
+export const supplierBHotels: HotelOffer[] = [
   { hotelId: "b1", name: "Holtin", price: 5340, city: "delhi", commissionPct: 20 },
   { hotelId: "b2", name: "Radison", price: 6200, city: "delhi", commissionPct: 11 },
   { hotelId: "b3", name: "Oberoi", price: 9500, city: "delhi", commissionPct: 12 },
